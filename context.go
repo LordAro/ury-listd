@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"net"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/UniversityRadioYork/bifrost-go"
 )
 
 // Context is the main listd instance. Manages TCP connections (including the
@@ -34,18 +34,18 @@ func (ctx *Context) onClientDisconnect(c *Client, err error) {
 	ctx.log.Warn("Connection lost from ", c.RemoteAddr())
 }
 
-func (ctx *Context) onNewRequest(c *Client, message []byte) {
-	ctx.log.Debug("Request: ", string(bytes.TrimRight(message, "\n")))
+func (ctx *Context) onNewRequest(c *Client, message bifrost.Message) {
+	ctx.log.Debug("Request: ", message.String())
 	ctx.outgoing.Send(message)
 }
 
-func (ctx *Context) onNewResponse(message []byte) {
-	ctx.log.Debug("Response: ", string(bytes.TrimRight(message, "\n")))
+func (ctx *Context) onNewResponse(message bifrost.Message) {
+	ctx.log.Debug("Response: ", message.String())
 	ctx.Broadcast(message)
 }
 
 // Broadcast sends a message to all connected clients.
-func (ctx *Context) Broadcast(message []byte) {
+func (ctx *Context) Broadcast(message bifrost.Message) {
 	for client := range ctx.clients {
 		client.Send(message)
 	}
