@@ -11,12 +11,6 @@ type Peers struct {
 	mu sync.RWMutex
 }
 
-var peers *Peers
-
-func init() {
-	peers = &Peers{m: make(map[string]chan<- msg.Message)}
-}
-
 // Add creates and returns a new channel for the given peer address.
 // If an address already exists in the registry, it returns nil.
 func (p *Peers) Add(addr string) <-chan msg.Message {
@@ -29,7 +23,7 @@ func (p *Peers) Add(addr string) <-chan msg.Message {
 	}
 
 	newChan := make(chan msg.Message)
-	p.m["addr"] = newChan
+	p.m[addr] = newChan
 	return newChan
 }
 
@@ -38,7 +32,19 @@ func (p *Peers) Remove(addr string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	close(p.m[addr])
 	delete(p.m, addr)
+}
+
+func (p *Peers) Map() map[string]chan<- msg.Message {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	mapCopy := make(map[string]chan<- msg.Message)
+
+	for k, v := range p.m {
+		mapCopy[k] = v
+	}
+	return mapCopy
 }
 
 // List returns a slice of all active peer channels.
